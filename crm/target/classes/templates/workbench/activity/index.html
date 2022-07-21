@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+
+    <link th:href="@{/jquery/bootstrap_3.3.0/css/bootstrap.min.css}" type="text/css" rel="stylesheet"/>
+    <link th:href="@{/jquery/bootstrap-datetimepicker-master/css/bootstrap-datetimepicker.min.css}" type="text/css"
+          rel="stylesheet"/>
+
+    <script type="text/javascript" th:src="@{/jquery/jquery-1.11.1-min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery/bootstrap_3.3.0/js/bootstrap.min.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/jquery/bootstrap-datetimepicker-master/js/bootstrap-datetimepicker.js}"></script>
+    <script type="text/javascript"
+            th:src="@{/jquery/bootstrap-datetimepicker-master/locale/bootstrap-datetimepicker.zh-CN.js}"></script>
+
+    <!--bs_pagination-->
+    <link rel="stylesheet" type="text/css" th:href="@{/jquery/bs_pagination-master/css/jquery.bs_pagination.min.css}">
+    <script type="text/javascript" th:src="@{/jquery/bs_pagination-master/js/jquery.bs_pagination.min.js}"></script>
+    <script type="text/javascript" th:src="@{/jquery/bs_pagination-master/localization/en.js}"></script>
+
+    <script type="text/javascript">
+
+        $(function () {
+            //页面加载完成,获取页面分页数据
+            queryActivityByConditionForPage(1, 10);
+
+            //点击查询时
+            $("#query_condition").click(function () {
+                //获取每页显示的条数
+                queryActivityByConditionForPage(1, $("#my_bs_pagination").bs_pagination("getOption", 'rowsPerPage'));
+                return false;
+            });
+
+            //点击创建activity按钮时
+            $("#createActivityBtn").click(function () {
+                //将创建活动jquery转化为dom对象,在重置表单
+                $("#saveActivityForm").get(0).reset();
+                //打开模态窗口
+                $("#createActivityModal").modal("show")
+            });
+
+            //点击保存activity
+            $("#saveActivity").click(function () {
+                //获取表单中的值 : 所有者id
+                var owner = $("#create-marketActivityOwner option:selected").attr("value");
+                //活动名称
+                var activityName = $.trim($("#create-marketActivityName").val());
+                var activityStartTime = $("#create-startTime").val();
+                var activityEndTime = $("#create-endTime").val();
+                var activityCost = $.trim($("#create-cost").val());
+                var activityDescribe = $.trim($("#create-describe").val());
+                if ("" === owner) {
+                    alert("所有者不能为空");
+                    return false;
+                }
+                if ("" === activityName) {
+                    alert("活动名不能为空");
+                    return false;
+                }
+                if ("" !== activityStartTime && "" !== activityEndTime) {
+                    if (activityStartTime > activityEndTime) {
+                        alert("结束日期不能比开始时间小");
+                        return false;
+                    }
+                }
+                //匹配非负整数
+                var regExp = /^(([1-9]\d*)|0)$/;
+                if (!regExp.test(activityCost)) {
+                    alert("成本只能是非负整数");
+                    return false;
+                }
+
+                $.ajax({
+                    url: '/crm/workbench/activity/saveActivity.do',
+                    data: {
+                        owner: owner,
+                        name: activityName,
+                        startDate: activityStartTime,
+                        endDate: activityEndTime,
+                        cost: activityCost,
+                        description: activityDescribe
+                    },
+                    type: 'post',
+                    dataType: 'json',
+                    success: function (data) {
+                        //添加成功
+                        if (data.code === "1") {
+                            //关闭当前模态窗口
+                            $("#createActivityModal").modal("hide")
+                            //刷新当前页面activity
+                            queryActivityByConditionForPage(1, $("#my_bs_pagination").bs_pagination("getOption", 'rowsPerPage'))
+                        } else {
+                            //添加失败提示信息
+                            alert(data.message);
+                        }
+                    }
+                })
+            });
+
+            //类选择器点击时间框
+            $(".myDate").datetimepicker({
+                language: 'zh-CN', //语言
+                format: 'yyyy-mm-dd', //日期格式
+                minView: 'month', //可以选择的最小视图
+                initialDate: new Date(), //初始化选择的时间
+                autoclose: true, //选择完日期或时间后,日历是否自动关闭
+                todayBtn: true, //是否显示今天按钮
+                clearBtn: true //是否显示清空按钮
+            });
+
+            //给每个activity 的checkbox绑定单击事件,获取不到动态标签的事件
+            /* $("#tBody input[type='checkbox']").click(function () {
+                 //全部idCheckbox === 被选中的idCheckBox
+                 if ($("#tBody input[type='checkbox']").size() === $("#tBody input[type='checkbox']:checked").size()) {
+                     $("#selectAllActivity").prop("checked", true)
+                 } else {
+                     $("#selectAllActivity").prop("checked", false)
+                 }
+             });*/
+
+            //ajax异步请求activityId标签可能还没生成
+            //要获取这种动态标签必须使用jquery的on函数 : 父选择器.on('事件类型' , '子选择器', function()) 父元素必须是固有元素
+            //点击全选activity时
+            $("#tBody").on("click", "input[type='checkbox']", function () {
+                if ($("#tBody input[type='checkbox']").size() === $("#tBody input[type='checkbox']:checked").size()) {
+                    $("#selectAllActivity").prop("checked", true)
+                } else {
+                    $("#selectAllActivity").prop("checked", false)
+                }
+            });
+
+            //全选全不选
+            $("#selectAllActivity").click(function () {
+                //点完之后是选中
+                //var prop = $("#selectAllActivity").prop('checked');
+                // if (prop === true) {
+                //     $(".activityId").prop('checked', true);
+                // } else if (prop === false) {
+                //     //点击时为false,全选
+                //     $(".activityId").prop('checked', false);
+                // }
+                //简化
+                $(".activityId").prop('checked', $("#selectAllActivity").prop('checked'));
+            });
+
+            //点击删除按钮时，
+            $("#deleteActivity").click(function () {
+                //判断是否有选中的activity，没有不发送请求
+                //创建储存activityId的数组
+                var activityIds = [];
+                //获取所有以选中的activity
+                var $tBody = $("#tBody input[type='checkbox']:checked");
+                $.each($tBody, function (index, obj) {
+                    activityIds.push(obj.value);
+                })
+                if (activityIds.length === 0) {
+                    alert("请选择你要删除的市场活动");
+                }
+                if (activityIds.length !== 0) {
+                    if (confirm("你确定要删除" + activityIds.length + "条市场记录?")) {
+                        $.ajax({
+                            url: '/crm/workbench/activity/deleteActivitiesById.do',
+                            traditional: true,
+                            data: {
+                                activityIds: activityIds
+                            },
+                            type: 'post',
+                            dataType: 'json',
+                            success: function (data) {
+                                if (data.code === "1") {
+                                    //删除成功,刷新分页数据
+                                    queryActivityByConditionForPage(1, $("#my_bs_pagination").bs_pagination("getOption", 'rowsPerPage'))
+                                } else {
+                                    alert("系统繁忙,请稍后再试");
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            //点击修改按钮时
+            $("#updateActivity").click(function () {
+
+                //获取选中的activity的数量$("#tBody input[type='checkbox']:checked").size()
+                var checkedSize = $("#tBody input[type='checkbox']:checked").size();
+                if (checkedSize !== 1) {
+                    alert("请选择一个活动进行修改");
+                    return false;
+                } else {
+                    //选中了一个activity,获取此activity的id
+                    var $tBody1 = $("#tBody input[type='checkbox']:checked").attr("value");
+                    //发送请求获取当前activity的信息
+                    $.ajax({
+                        url: '/crm/workbench/activity/queryActivityById.do',
+                        data: {
+                            id: $tBody1
+                        },
+                        type: 'post',
+                        dataType: 'json',
+                        success: function (activity) {
+                            //将获取到的activity信息填入到表单中
+                            //直接查询出所有者的id,不做表连接，在所有者下拉框做判断
+                            //将所有者id直接赋值给select ，会自动匹配select中的option
+                            $("#edit-marketActivityOwner").val(activity.owner);
+                            $("#edit-marketActivityName").val(activity.name);
+                            $("#edit-startTime").val(activity.startDate);
+                            $("#edit-endTime").val(activity.endDate);
+                            $("#edit-cost").val(activity.cost);
+                            $("#edit-describe").val(activity.description);
+
+                            //弹出修改activity窗口
+                            $("#editActivityModal").modal("show")
+                        }
+                    });
+
+                }
+            });
+
+            //点击更新时
+            $("#updateActBtn").click(function () {
+                var owner = $("#edit-marketActivityOwner option:selected").attr("value");
+                var activityName = $.trim($("#edit-marketActivityName").val());
+                var activityStartTime = $("#edit-startTime").val();
+                var activityEndTime = $("#edit-endTime").val();
+                var activityCost = $.trim($("#edit-cost").val());
+                var activityDescribe = $.trim($("#edit-describe").val());
+                if ("" === owner) {
+                    alert("所有者不能为空");
+                    return false;
+                }
+                if ("" === activityName) {
+                    alert("活动名不能为空");
+                    return false;
+                }
+                if ("" !== activityStartTime && "" !== activityEndTime) {
+                    if (activityStartTime > activityEndTime) {
+                        alert("结束日期不能比开始时间小");
+                        return false;
+                    }
+                }
+                //匹配非负整数
+                var regExp = /^(([1-9]\d*)|0)$/;
+                if (!regExp.test(activityCost)) {
+                    alert("成本只能是非负整数");
+                    return false;
+                }
+                //能打开修改模态窗口说明当前只有一个选中的activity
+                var id = $("#tBody input[type='checkbox']:checked").attr("value");
+                $.ajax({
+                    url: '/crm/workbench/activity/updateActivityById.do',
+                    data: {
+                        id: id,
+                        owner: owner,
+                        name: activityName,
+                        startDate: activityStartTime,
+                        endDate: activityEndTime,
+                        cost: activityCost,
+                        description: activityDescribe
+                    },
+                    type: 'post',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.code === "1") {
+                            //修改成功，刷新activity分页信息
+                            //修改之后，当前页和当前页条数都不变
+                            queryActivityByConditionForPage($("#my_bs_pagination").bs_pagination("getOption", 'currentPage'), $("#my_bs_pagination").bs_pagination("getOption", 'rowsPerPage'))
+                            //关闭窗口
+                            $("#editActivityModal").modal("hide")
+                        } else {
+                            alert(data.message);
+                        }
+                    }
+                })
+            });
+
+            //点击导出活动
+            $("#exportActivityAllBtn").click(function () {
+                if ($("#tBody input[type='checkbox']:checked").size() === 0) {
+                    alert("请选择你要导出的市场活动");
+                    return;
+                }
+
+                var ids = "?";
+                //获取所有以选中的activity
+                var $tBody = $("#tBody input[type='checkbox']:checked");
+                $.each($tBody, function (index, obj) {
+                    ids += "ids=" + obj.value + "&"
+                });
+                //删除最后一个&
+                ids = ids.slice(0, -1);
+
+                if (confirm("你确定要导出市场活动吗?")) {
+                    window.location.href = "/crm/workbench/activity/exportActivityByIds.do" + ids;
+                }
+
+            });
+
+            //点击导入活动
+            $("#importActivity").click(function () {
+                //重置提交文件input中的文件
+
+                //打开导入活动模态窗口
+                $("#importActivityModal").modal("show");
+            });
+
+            //点击提交activity
+            $("#importActivityBtn").click(function () {
+
+                //获取上传的文件名,input类型为file时，val()获取的是文件名
+                var activityFileName = $("#activityFile").val();
+                //获取文件后缀名,转为小写
+                var activitySuffixName = activityFileName.substr(activityFileName.lastIndexOf(".") + 1).toLocaleLowerCase(); //XLS,Xls,xLs, xlS
+                if ("xls" !== activitySuffixName) {
+                    alert("只支持.xls文件");
+                    return false;
+                }
+                //上传的文件是存放在input dom对象的files属性中
+                var activityFile = $("#activityFile")[0].files[0];
+                if (activityFile.size > 5 * 1024 * 1024) {
+                    alert("文件大小不能超过5MB");
+                    return false;
+                }
+                //FormData是ajax提供的接口，可以模拟键值对向后台提交参数
+                //FormDatah还能提交二进制数据
+                var formData = new FormData();
+                formData.append("activityFile", activityFile)
+                //发送异步请求
+                $.ajax({
+                    url: '/crm/workbench/activity/importActivity.do',
+                    data: formData,
+                    processData: false, //设置ajax向后台提交参数之前，是否将参数统一转化成字符串
+                    contentType: false, //设置是否把参数统一按urlencoded编码
+                    type: 'post',
+                    dataType: 'json',
+                    success: function (data) {
+                        //导入成功
+                        if (data.code === "1") {
+                            //刷新市场活动列表
+                            queryActivityByConditionForPage(1, $("#my_bs_pagination").bs_pagination("getOption", 'rowsPerPage'))
+                            //关闭模态窗口
+                            $("#importActivityModal").modal("hide");
+                        } else {
+                            alert(data.message);
+                        }
+                    }
+                });
+
+            });
+
+        });
+
+        //提取的查询分页数据方法,根据pageNo, pageSize
+        function queryActivityByConditionForPage(pageNo, pageSize) {
+            var name = $("#query-name").val();
+            var owner = $("#query-owner").val();
+            var endDate = $("#queryEndTime").val();
+            var startDate = $("#queryStartTime").val();
+            $.ajax({
+
+                url: '/crm/workbench/activity/page.do',
+                data: {
+                    name: name,
+                    owner: owner,
+                    startDate: startDate,
+                    endDate: endDate,
+                    pageNo: pageNo,
+                    pageSize: pageSize,
+                },
+                type: 'post',
+                dataType: 'json',
+                success: function (page) {
+                    var htmlStr = "";
+                    //遍历page里的activity集合
+                    $.each(page.records, function (index, activity) {
+                        //这也太麻烦了,从ajax返回的activity数据填入到html标签里
+                        htmlStr += "<tr class=\"active\">";
+                        htmlStr += "<td><input class='activityId' type=\"checkbox\" value=\"" + activity.id + "\"/></td>";
+                        htmlStr += "<td><a style=\"text-decoration: none; cursor: pointer;\" onClick=\"window.location.href='/crm/workbench/activity/toActivityDetail.do?id="+ activity.id +"';\">" + activity.name + "</a></td>";
+                        htmlStr += "<td>" + activity.owner + "</td>";
+                        htmlStr += "<td>" + activity.startDate + "</td>";
+                        htmlStr += "<td>" + activity.endDate + "</td>";
+                        htmlStr += "</tr>";
+                    });
+                    //将这些表示activity标签的字符串变为标签
+                    $("#tBody").html(htmlStr);
+
+                    //更换activity分页数据时，取消全选
+                    $("#selectAllActivity").prop('checked', false);
+
+                    //使用bs_pagination分页
+                    $("#my_bs_pagination").bs_pagination({
+                        currentPage: page.current, //当前页
+                        rowsPerPage: page.size, //每页记录数
+                        totalRows: page.total, //总条数
+                        totalPages: page.pages, //总页数
+                        visiblePageLinks: 5, //最多显示d的导航页数
+
+                        //每次切换页号,自动触发本函数
+                        //pageObj为每次切换页号之后返回的pageNo和pageSize
+                        onChangePage: function (event, pageObj) {
+                            queryActivityByConditionForPage(pageObj.currentPage, pageObj.rowsPerPage);
+                        }
+
+                    });
+
+                }
+            });
+        }
+
+    </script>
+</head>
+<body>
+
+<!-- 创建市场活动的模态窗口 -->
+<div class="modal fade" id="createActivityModal" role="dialog">
+    <div class="modal-dialog" role="document" style="width: 85%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel1">创建市场活动</h4>
+            </div>
+            <div class="modal-body">
+
+                <form class="form-horizontal" role="form" id="saveActivityForm">
+
+                    <div class="form-group">
+                        <label for="create-marketActivityOwner" class="col-sm-2 control-label">所有者<span
+                                style="font-size: 15px; color: red;">*</span></label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <select class="form-control" id="create-marketActivityOwner">
+                                <th:block th:each="user : ${users}">
+                                    <!--用户选择的是用户名-->
+                                    <!--保存的是id-->
+                                    <option th:value="${user.id}">[[${user.name}]]</option>
+                                </th:block>
+                            </select>
+                        </div>
+                        <label for="create-marketActivityName" class="col-sm-2 control-label">名称<span
+                                style="font-size: 15px; color: red;">*</span></label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control" id="create-marketActivityName">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-startTime" class="col-sm-2 control-label">开始日期</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control myDate" id="create-startTime" readonly>
+                        </div>
+                        <label for="create-endTime" class="col-sm-2 control-label">结束日期</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control myDate" id="create-endTime" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                        <label for="create-cost" class="col-sm-2 control-label">成本</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control" id="create-cost">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-describe" class="col-sm-2 control-label">描述</label>
+                        <div class="col-sm-10" style="width: 81%;">
+                            <textarea class="form-control" rows="3" id="create-describe"></textarea>
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="cancelSaveActivity" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="saveActivity">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改市场活动的模态窗口 -->
+<div class="modal fade" id="editActivityModal" role="dialog">
+    <div class="modal-dialog" role="document" style="width: 85%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel2">修改市场活动</h4>
+            </div>
+            <div class="modal-body">
+
+                <form class="form-horizontal" role="form">
+
+                    <div class="form-group">
+                        <label for="edit-marketActivityOwner" class="col-sm-2 control-label">所有者<span
+                                style="font-size: 15px; color: red;">*</span></label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <select class="form-control" id="edit-marketActivityOwner">
+                                <th:block th:each="user : ${users}">
+                                    <!--用户选择的是用户名-->
+                                    <!--保存的是id-->
+                                    <option th:value="${user.id}">[[${user.name}]]</option>
+                                </th:block>
+                            </select>
+                        </div>
+                        <label for="edit-marketActivityName" class="col-sm-2 control-label">名称<span
+                                style="font-size: 15px; color: red;">*</span></label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control" id="edit-marketActivityName">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-startTime" class="col-sm-2 control-label">开始日期</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control myDate" id="edit-startTime"
+                                   readonly>
+                        </div>
+                        <label for="edit-endTime" class="col-sm-2 control-label">结束日期</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control myDate" id="edit-endTime"
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-cost" class="col-sm-2 control-label">成本</label>
+                        <div class="col-sm-10" style="width: 300px;">
+                            <input type="text" class="form-control" id="edit-cost">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-describe" class="col-sm-2 control-label">描述</label>
+                        <div class="col-sm-10" style="width: 81%;">
+                            <textarea class="form-control" rows="3" id="edit-describe"></textarea>
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="updateActBtn">更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入市场活动的模态窗口 -->
+<div class="modal fade" id="importActivityModal" role="dialog">
+    <div class="modal-dialog" role="document" style="width: 85%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">导入市场活动</h4>
+            </div>
+            <div class="modal-body" style="height: 350px;">
+                <div style="position: relative;top: 20px; left: 50px;">
+                    请选择要上传的文件：<small style="color: gray;">[仅支持.xls]</small>
+                </div>
+                <div style="position: relative;top: 40px; left: 50px;">
+                    <input type="file" id="activityFile">
+                </div>
+                <div style="position: relative; width: 400px; height: 320px; left: 45% ; top: -40px;">
+                    <h3>重要提示</h3>
+                    <ul>
+                        <li>操作仅针对Excel，仅支持后缀名为XLS的文件。</li>
+                        <li>给定文件的第一行将视为字段名。</li>
+                        <li>请确认您的文件大小不超过5MB。</li>
+                        <li>日期值以文本形式保存，必须符合yyyy-MM-dd格式。</li>
+                        <li>日期时间以文本形式保存，必须符合yyyy-MM-dd HH:mm:ss的格式。</li>
+                        <li>默认情况下，字符编码是UTF-8 (统一码)，请确保您导入的文件使用的是正确的字符编码方式。</li>
+                        <li>建议您在导入真实数据之前用测试文件测试文件导入功能。</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button id="importActivityBtn" type="button" class="btn btn-primary">导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div>
+    <div style="position: relative; left: 10px; top: -10px;">
+        <div class="page-header">
+            <h3>市场活动列表</h3>
+        </div>
+    </div>
+</div>
+<div style="position: relative; top: -20px; left: 0px; width: 100%; height: 100%;">
+    <div style="width: 100%; position: absolute;top: 5px; left: 10px;">
+
+        <!--查询条件-->
+        <div class="btn-toolbar" role="toolbar" style="height: 80px;">
+            <form class="form-inline" role="form" style="position: relative;top: 8%; left: 5px;">
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <div class="input-group-addon">名称</div>
+                        <input class="form-control" type="text" id="query-name">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <div class="input-group-addon">所有者</div>
+                        <input class="form-control" type="text" id="query-owner">
+                    </div>
+                </div>
+
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <div class="input-group-addon">开始日期</div>
+                        <input class="form-control" type="text" id="queryStartTime"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-group">
+                        <div class="input-group-addon">结束日期</div>
+                        <input class="form-control" type="text" id="queryEndTime">
+                    </div>
+                </div>
+
+                <button class="btn btn-default" id="query_condition">查询</button>
+
+            </form>
+        </div>
+        <!--增删改导入导出-->
+        <div class="btn-toolbar" role="toolbar"
+             style="background-color: #F7F7F7; height: 50px; position: relative;top: 5px;">
+            <div class="btn-group" style="position: relative; top: 18%;">
+                <!--不使用前端的方式打开模态窗口,使用jquery-->
+                <!--<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createActivityModal">-->
+                <button type="button" class="btn btn-primary" id="createActivityBtn">
+                    <span class="glyphicon glyphicon-plus"></span> 创建
+                </button>
+                <button type="button" class="btn btn-default" data-toggle="modal" data-target="#editActivityModal"
+                        id="updateActivity"><span
+                        class="glyphicon glyphicon-pencil"></span> 修改
+                </button>
+                <button type="button" class="btn btn-danger" id="deleteActivity"><span
+                        class="glyphicon glyphicon-minus"></span> 删除
+                </button>
+            </div>
+            <div class="btn-group" style="position: relative; top: 18%;">
+                <button type="button" class="btn btn-default" data-toggle="modal" id="importActivity">
+                    <span class="glyphicon glyphicon-import"></span> 上传列表数据（导入）
+                </button>
+                <button id="exportActivityAllBtn" type="button" class="btn btn-default"><span
+                        class="glyphicon glyphicon-export"></span> 下载列表数据（批量导出）
+                </button>
+                <button id="exportActivityXzBtn" type="button" class="btn btn-default"><span
+                        class="glyphicon glyphicon-export"></span> 下载列表数据（选择导出）
+                </button>
+            </div>
+        </div>
+
+        <div style="position: relative;top: 10px;">
+            <table class="table table-hover">
+                <thead>
+                <tr style="color: #B3B3B3;">
+                    <td><input type="checkbox" id="selectAllActivity"/></td>
+                    <td>名称</td>
+                    <td>所有者</td>
+                    <td>开始日期</td>
+                    <td>结束日期</td>
+                </tr>
+                </thead>
+                <tbody id="tBody">
+                <!--通过ajax请求返回的数据,拼接为activity : tr td-->
+                </tbody>
+
+            </table>
+        </div>
+        <div id="my_bs_pagination"></div>
+
+    </div>
+
+</div>
+</body>
+</html>

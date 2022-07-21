@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.ContactsMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.Contacts">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="owner" column="owner" jdbcType="CHAR"/>
+        <result property="source" column="source" jdbcType="VARCHAR"/>
+        <result property="customerId" column="customer_id" jdbcType="CHAR"/>
+        <result property="fullname" column="fullname" jdbcType="VARCHAR"/>
+        <result property="appellation" column="appellation" jdbcType="VARCHAR"/>
+        <result property="email" column="email" jdbcType="VARCHAR"/>
+        <result property="mphone" column="mphone" jdbcType="VARCHAR"/>
+        <result property="job" column="job" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="contactSummary" column="contact_summary" jdbcType="VARCHAR"/>
+        <result property="nextContactTime" column="next_contact_time" jdbcType="CHAR"/>
+        <result property="address" column="address" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,owner,source,
+        customer_id,fullname,appellation,
+        email,mphone,job,
+        create_by,create_time,edit_by,
+        edit_time,description,contact_summary,
+        next_contact_time,address
+    </sql>
+    <insert id="insertContacts">
+        insert into tbl_contacts
+        values (#{id}, #{owner}, #{source}, #{
+        customerId}, #{fullname}, #{appellation}, #{
+        email}, #{mphone}, #{job}, #{
+        createBy}, #{createTime}, #{editBy}, #{
+        editTime}, #{description}, #{contactSummary}, #{
+        nextContactTime}, #{address})
+    </insert>
+    <select id="selectContactsByContactsName" resultType="com.zjt.crm.workbench.pojo.Contacts">
+        select id, fullname, email, mphone from tbl_contacts where fullname like '%' #{contactsName} '%'
+    </select>
+</mapper>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<!--总页数为0-->
+<th:block th:if="${activityPage.pages == 0}">
+  <li class="disabled"><a>首页</a></li>
+  <li class="disabled"><a>上一页</a></li>
+  <li class="disabled"><a>1</a></li>
+  <li class="disabled"><a href="#">2</a></li>
+  <li class="disabled"><a href="#">3</a></li>
+  <li class="disabled"><a href="#">4</a></li>
+  <li class="disabled"><a href="#">5</a></li>
+  <li class="disabled"><a>下一页</a></li>
+  <li class="disabled"><a>末页</a></li>
+</th:block>
+
+<!--总页数不为0-->
+<th:block th:if="${activityPage.pages != 0}">
+  <!--当前页为1,首页禁用，为了好看还是不设置当前为首页时，没首页按钮，只把首页按钮禁用了-->
+  <th:block th:if="${activityPage.current == 1}">
+    <li class="disabled"><a>首页</a></li>
+  </th:block>
+  <!--当前页大于1，点击跳转到首页-->
+  <th:block th:if="${activityPage.current > 1}">
+    <li><a id="pageFirst">首页</a></li>
+  </th:block>
+  <!--没有上一页，禁用上一页-->
+  <th:block th:if="${!activityPage.hasPrevious()}">
+    <li class="disabled"><a>上一页</a></li>
+  </th:block>
+  <!--有上一页-->
+  <th:block th:if="${activityPage.hasPrevious()}">
+    <li><a href="#">上一页</a></li>
+  </th:block>
+
+  <!--当前页小于等于3-->
+  <th:block th:if="${activityPage.current <= 3}">
+    <li class="active"><a th:href="@{/workberch/activity/page}">1</a></li>
+    <li><a href="#">2</a></li>
+    <li><a href="#">3</a></li>
+    <li><a href="#">4</a></li>
+    <li><a href="#">5</a></li>
+  </th:block>
+
+  <!--当前页大于3，小于pages - 2 -->
+  <th:block
+          th:if="${activityPage.current > 3 && activityPage.current < activityPage.pages - 2}"
+          th:each="i:${#numbers.sequence(activityPage.current - 2, activityPage.current + 2)}">
+    <!--当前页高亮显示-->
+    <th:block th:if="${activityPage.current == i}">
+      <li class="active" > <a th:text="${i}"> </a> </li>
+    </th:block>
+
+  </th:block>
+
+  <!--当前页面大于等于 pages - 2-->
+  <th:block th:if="${activityPage.current >= activityPage.pages - 2}">
+    <li class="active"><a href="#">1</a></li>
+    <li><a href="#">2</a></li>
+    <li><a href="#">3</a></li>
+    <li><a href="#">4</a></li>
+    <li><a href="#">5</a></li>
+  </th:block>
+
+  <!--没有下一页-->
+  <th:block th:if="${!activityPage.hasNext()}">
+    <li class="disabled"><a>下一页</a></li>
+  </th:block>
+  <!--有下一页-->
+  <th:block th:if="${activityPage.hasNext()}">
+    <li><a href="#">下一页</a></li>
+  </th:block>
+
+  <!--一条数据都没有当前页是1，总页数pages是0，有毒，所以不能用当前页不等于最大页为条件设置-->
+  <!--<li class="disabled"><a href="#" th:if="${activityPage.current != activityPage.pages}" >末页</a></li>-->
+  <!--当前页不为最后一页-->
+  <th:block th:if="${activityPage.current < activityPage.pages}">
+    <li><a href="#">末页</a></li>
+  </th:block>
+  <!--当前页为最后一页-->
+  <th:block th:if="${activityPage.current == activityPage.pages}">
+    <li class="disabled"><a>末页</a></li>
+  </th:block>
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.ActivityMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.Activity">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="owner" column="owner" jdbcType="CHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="startDate" column="start_date" jdbcType="CHAR"/>
+        <result property="endDate" column="end_date" jdbcType="CHAR"/>
+        <result property="cost" column="cost" jdbcType="VARCHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,owner,name,
+        start_date,end_date,cost,
+        description,create_time,create_by,
+        edit_time,edit_by
+    </sql>
+    <!--根据条件查询分页信息-->
+    <!--修改人信息可能为空，所以选择左外连接-->
+    <select id="selectActivityByConditionForPage" resultMap="BaseResultMap">
+        select a.id, u1.name as owner, a.name, a.start_date, a.end_date, a.cost, a.description, a.create_time, u2.name
+        as create_by, a.edit_time, u3.name as edit_by
+        from tbl_activity a
+        join tbl_user u1
+        on a.owner = u1.id
+        join tbl_user u2
+        on a.create_by = u2.id
+        left join tbl_user u3
+        on a.edit_by = u3.id
+        <trim prefix="where" suffixOverrides="and|or">
+            <!--查询条件为活动名称, test里如果参数为map集合也要加"map."-->
+            <if test="map.name != null and map.name != ''">
+                a.name like '%' #{map.name} '%' and
+            </if>
+            <!--查询条件为活动所有者-->
+            <if test="map.owner != null and map.owner != ''">
+                u1.name like '%' #{map.owner} '%' and
+            </if>
+            <!--查询条件为活动开始时间-->
+            <if test="map.startDate != null and map.startDate != ''">
+                a.start_date >= #{map.startDate} and
+            </if>
+            <!--查询条件为活动结束时间 '&lt;' : 小于-->
+            <if test="map.endDate != null and map.endDate != ''">
+                a.end_date &lt;= #{map.endDate}
+            </if>
+        </trim>
+        <!--前端没留排序条件,直接固定-->
+        order by a.create_time desc
+    </select>
+
+    <select id="queryActivityById" resultMap="BaseResultMap">
+        select a.id,
+               a.owner,
+               a.name,
+               a.start_date,
+               a.end_date,
+               a.cost,
+               a.description,
+               a.create_time,
+               u2.name
+                       as create_by,
+               a.edit_time,
+               u3.name as edit_by
+        from tbl_activity a
+                 join tbl_user u2
+                      on a.create_by = u2.id
+                 left join tbl_user u3
+                           on a.edit_by = u3.id
+        where a.id = #{id,jdbcType=VARCHAR}
+    </select>
+
+    <select id="queryActivityByIds" resultMap="BaseResultMap">
+        select a.id, u1.name as owner, a.name, a.start_date, a.end_date, a.cost, a.description, a.create_time, u2.name
+        as create_by, a.edit_time, u3.name as edit_by
+        from tbl_activity a
+        join tbl_user u1
+        on a.owner = u1.id
+        join tbl_user u2
+        on a.create_by = u2.id
+        left join tbl_user u3
+        on a.edit_by = u3.id
+        where a.id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id="queryActivityForDetailById" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id,
+               u1.name as owner,
+               a.name,
+               a.start_date,
+               a.end_date,
+               a.cost,
+               a.description,
+               a.create_time,
+               u2.name
+                       as create_by,
+               a.edit_time,
+               u3.name as edit_by
+        from tbl_activity a
+                 join tbl_user u1
+                      on a.owner = u1.id
+                 join tbl_user u2
+                      on a.create_by = u2.id
+                 left join tbl_user u3
+                           on a.edit_by = u3.id
+        where a.id = #{id,jdbcType=VARCHAR}
+    </select>
+    <select id="selectActivitiesForClueDetailByClueId" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id, a.name, u1.name as owner, a.start_date, a.end_date
+        from tbl_activity a
+                 join tbl_user u1 on a.owner = u1.id
+                 join tbl_clue_activity_relation car on a.id = car.activity_id
+        where car.clue_id = #{clueId}
+    </select>
+    <select id="selectActivitiesForBindByActName" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id, a.name, a.start_date, a.end_date, u1.name as owner
+        from tbl_activity a
+        join tbl_user u1 on a.owner = u1.id
+        where a.name like '%' #{activityName} '%' and a.id not in (
+            select activity_id
+            from tbl_clue_activity_relation
+            where clue_id = #{clueId})
+    </select>
+    <select id="selectActivitiesForAppendingByIds" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id, a.name, u1.name as owner, a.start_date, a.end_date
+        from tbl_activity a
+                 join tbl_user u1 on a.owner = u1.id
+        where a.id in
+        <foreach collection="ids" item="id" separator="," close=")" open="(">
+            #{id}
+        </foreach>
+    </select>
+    <select id="selectActivityForClueConvertByActivityName" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id, a.name, u1.name as owner, a.start_date, a.end_date
+        from tbl_activity a
+                 join tbl_user u1 on a.owner = u1.id
+                 join tbl_clue_activity_relation car on a.id = car.activity_id
+        where car.clue_id = #{clueId} and a.name like '%' #{activityName} '%'
+    </select>
+    <select id="selectActivitiesForSaveTranByActName" resultType="com.zjt.crm.workbench.pojo.Activity">
+        select a.id, a.name, a.start_date, a.end_date, u1.name as owner
+        from tbl_activity a
+                 join tbl_user u1 on a.owner = u1.id
+        where a.name like '%' #{activityName} '%'
+    </select>
+</mapper>

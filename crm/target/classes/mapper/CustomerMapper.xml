@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.CustomerMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.Customer">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="owner" column="owner" jdbcType="CHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="website" column="website" jdbcType="VARCHAR"/>
+        <result property="phone" column="phone" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="contactSummary" column="contact_summary" jdbcType="VARCHAR"/>
+        <result property="nextContactTime" column="next_contact_time" jdbcType="CHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="address" column="address" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,owner,name,
+        website,phone,create_by,
+        create_time,edit_by,edit_time,
+        contact_summary,next_contact_time,description,
+        address
+    </sql>
+    <insert id="insertCustomer">
+        insert into tbl_customer
+        values (#{id}, #{owner}, #{name}, #{
+        website}, #{phone}, #{createBy}, #{
+        createTime}, #{editBy}, #{editTime}, #{
+        contactSummary}, #{nextContactTime}, #{description}, #{
+        address})
+    </insert>
+    <select id="selectAllCustomerNameByLikeName" resultType="java.lang.String">
+        select name
+        from tbl_customer
+        where name like '%' #{customerName} '%';
+    </select>
+    <select id="selectCustomerByCustomerName" resultType="com.zjt.crm.workbench.pojo.Customer">
+        select
+        <include refid="Base_Column_List"/>
+        from tbl_customer where name = #{customerName}
+    </select>
+</mapper>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.TranMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.Tran">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="owner" column="owner" jdbcType="CHAR"/>
+        <result property="money" column="money" jdbcType="VARCHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="expectedDate" column="expected_date" jdbcType="CHAR"/>
+        <result property="customerId" column="customer_id" jdbcType="CHAR"/>
+        <result property="stage" column="stage" jdbcType="VARCHAR"/>
+        <result property="orderNo" column="order_no" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="source" column="source" jdbcType="VARCHAR"/>
+        <result property="activityId" column="activity_id" jdbcType="CHAR"/>
+        <result property="contactsId" column="contacts_id" jdbcType="CHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="contactSummary" column="contact_summary" jdbcType="VARCHAR"/>
+        <result property="nextContactTime" column="next_contact_time" jdbcType="CHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,owner,money,
+        name,expected_date,customer_id,
+        stage,type,source,
+        activity_id,contacts_id,create_by,
+        create_time,edit_by,edit_time,
+        description,contact_summary,next_contact_time
+    </sql>
+    <insert id="insertTran">
+        insert into tbl_tran
+        values (#{id}, #{owner}, #{money}, #{name}, #{expectedDate}, #{customerId}, #{stage},
+                #{type}, #{source}, #{activityId}, #{contactsId}, #{createBy}, #{createTime},
+                #{editBy}, #{editTime}, #{description}, #{contactSummary}, #{nextContactTime})
+    </insert>
+    <select id="selectTranForPageByCondition" resultType="com.zjt.crm.workbench.pojo.Tran">
+        select t.id, u.name as owner, t.money, t.name, t.expected_date, c.name as customer_id, dv.value as stage, dv2.value as type,
+               dv3.value as source, cons.fullname as contacts_id
+        from tbl_tran t
+        join tbl_user u on t.owner = u.id
+        join tbl_customer c on t.customer_id = c.id
+        left join tbl_dic_value dv on t.stage = dv.id
+        left join tbl_dic_value dv2 on t.type = dv2.id
+        left join tbl_dic_value dv3 on t.source = dv3.id
+        join tbl_contacts cons on t.contacts_id = cons.id
+        <trim prefix="where" suffixOverrides="and|or" >
+            <if test="tran.owner != null and tran.owner != ''">
+                owner like '%' #{tran.owner} '%' and
+            </if>
+            <if test="tran.name != null and tran.name != ''">
+                t.name like '%' #{tran.name} '%' and
+            </if>
+            <if test="tran.customerId != null and tran.customerId != ''">
+                customer_id like '%' #{tran.customerId} '%' and
+            </if>
+            <if test="tran.stage != null and tran.stage != ''">
+                stage = #{tran.stage} and
+            </if>
+            <if test="tran.type != null and tran.type != ''">
+                type = #{tran.type} and
+            </if>
+            <if test="tran.source != null and tran.source != ''">
+                source = #{tran.source} and
+            </if>
+            <if test="tran.contactsId != null and tran.contactsId != ''">
+                contacts_id like '%' #{tran.contactsId} '%'
+            </if>
+        </trim>
+        order by t.create_time desc
+    </select>
+    <select id="selectTranForDetailById" resultType="com.zjt.crm.workbench.pojo.Tran">
+        select t.id, u.name as owner, t.money, t.name, t.expected_date, c.name as customer_id, dv.value as stage, dv.order_no, dv2.value as type,
+               dv3.value as source, a.name as activity_id, cons.fullname as contacts_id, u2.name as create_by, t.create_time,
+               u3.name as edit_by, t.edit_time, t.description, t.contact_summary, t.next_contact_time
+        from tbl_tran t
+            join tbl_user u on t.owner = u.id
+            join tbl_customer c on t.customer_id = c.id
+            left join tbl_dic_value dv on t.stage = dv.id
+            left join tbl_dic_value dv2 on t.type = dv2.id
+            left join tbl_dic_value dv3 on t.source = dv3.id
+            join tbl_contacts cons on t.contacts_id = cons.id
+            left join tbl_activity a on t.activity_id = a.id
+            join tbl_user u2 on t.create_by = u2.id
+            left join tbl_user u3 on t.edit_by = u3.id
+        where t.id = #{tranId}
+    </select>
+    <select id="getTranCountGroupByStage" resultType="com.zjt.crm.workbench.pojo.FunnelVO">
+        select count(*) as value, dv.value as name
+        from tbl_tran t
+        join tbl_dic_value dv on t.stage = dv.id
+        group by t.stage
+    </select>
+</mapper>

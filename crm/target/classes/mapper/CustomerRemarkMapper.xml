@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.CustomerRemarkMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.CustomerRemark">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="noteContent" column="note_content" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="editFlag" column="edit_flag" jdbcType="CHAR"/>
+        <result property="customerId" column="customer_id" jdbcType="CHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,note_content,create_by,
+        create_time,edit_by,edit_time,
+        edit_flag,customer_id
+    </sql>
+    <insert id="insertRemarksByClueRemarks">
+        insert into tbl_customer_remark values
+        <foreach collection="customerRemarks" item="customerRemark" separator=",">
+            (#{customerRemark.id},#{customerRemark.noteContent},#{customerRemark.createBy},#{customerRemark.createTime},
+            #{customerRemark.editBy},#{customerRemark.editTime},#{customerRemark.editFlag},#{customerRemark.customerId})
+        </foreach>
+    </insert>
+</mapper>

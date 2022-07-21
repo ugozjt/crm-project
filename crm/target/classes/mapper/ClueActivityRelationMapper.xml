@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.ClueActivityRelationMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.ClueActivityRelation">
+            <id property="id" column="id" jdbcType="CHAR"/>
+            <result property="clueId" column="clue_id" jdbcType="CHAR"/>
+            <result property="activityId" column="activity_id" jdbcType="CHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,clue_id,activity_id
+    </sql>
+    <insert id="saveClueActivityRelationByClueAndActivityId">
+        insert into tbl_clue_activity_relation values
+        <foreach collection="clueActivityRelations" item="clueActivityRelation"  separator=",">
+            (#{clueActivityRelation.id}, #{clueActivityRelation.clueId}, #{clueActivityRelation.activityId})
+        </foreach>
+    </insert>
+    <delete id="deleteByActivityIdAndClueId">
+        delete
+        from tbl_clue_activity_relation
+        where activity_id = #{activityId,jdbcType=VARCHAR}
+          AND clue_id = #{clueId,jdbcType=VARCHAR}
+    </delete>
+    <delete id="deleteClueActivityRelationsByClueId">
+        delete from tbl_clue_activity_relation
+        where clue_id = #{clueId}
+    </delete>
+</mapper>

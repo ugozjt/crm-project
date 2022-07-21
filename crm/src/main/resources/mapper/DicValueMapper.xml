@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.settings.mapper.DicValueMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.settings.pojo.DicValue">
+            <id property="id" column="id" jdbcType="CHAR"/>
+            <result property="value" column="value" jdbcType="VARCHAR"/>
+            <result property="text" column="text" jdbcType="VARCHAR"/>
+            <result property="orderNo" column="order_no" jdbcType="VARCHAR"/>
+            <result property="typeCode" column="type_code" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,value,text,
+        order_no,type_code
+    </sql>
+    <select id="selectDicValueByDicType" resultType="com.zjt.crm.settings.pojo.DicValue">
+        select id, value, order_no from tbl_dic_value where type_code = #{dicType} order by order_no asc
+    </select>
+</mapper>

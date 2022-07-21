@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjt.crm.workbench.mapper.ClueRemarkMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjt.crm.workbench.pojo.ClueRemark">
+        <id property="id" column="id" jdbcType="CHAR"/>
+        <result property="noteContent" column="note_content" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="CHAR"/>
+        <result property="editBy" column="edit_by" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="CHAR"/>
+        <result property="editFlag" column="edit_flag" jdbcType="CHAR"/>
+        <result property="clueId" column="clue_id" jdbcType="CHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,note_content,create_by,
+        create_time,edit_by,edit_time,
+        edit_flag,clue_id
+    </sql>
+    <select id="selectClueRemarksByCLueId" resultType="com.zjt.crm.workbench.pojo.ClueRemark">
+        select cr.id,
+               cr.note_content,
+               u1.name as create_by,
+               cr.create_time,
+               u2.name as edit_by,
+               cr.edit_time,
+               cr.edit_flag
+        from tbl_clue_remark cr
+                 join tbl_user u1 on cr.create_by = u1.id
+                 left join tbl_user u2 on cr.edit_by = u2.id
+        where cr.clue_id = #{clueId}
+    </select>
+    <select id="selectClueRemarksByClueIdWithOriginalField" resultType="com.zjt.crm.workbench.pojo.ClueRemark">
+        select
+        <include refid="Base_Column_List"/>
+        from tbl_clue_remark
+        where clue_id = #{clueId}
+    </select>
+    <delete id="deleteClueRemarksByClueId">
+        delete from tbl_clue_remark where clue_id = #{clueId}
+    </delete>
+</mapper>

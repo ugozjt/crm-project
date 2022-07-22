@@ -13,6 +13,7 @@ import javax.servlet.http.HttpSession;
 /**
  * @author zhu
  * @version 1.0
+ * 未登录拦截
  */
 @Component
 public class LoginInterceptor implements HandlerInterceptor {

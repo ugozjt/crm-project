@@ -84,7 +84,6 @@ public class UserController {
                 Cookie loginPwdCookie = new Cookie(Constant.COOKIE_LOGIN_PWD, user.getLoginPwd());
                 if ("true".equals(isRemPwd)) {
                     //记住密码
-                    System.out.println(loginActCookie.getValue());
                     //将cookie保存在客户端硬盘上10天
                     loginActCookie.setMaxAge(60 * 60 * 24 * 10);
                     loginPwdCookie.setMaxAge(60 * 60 * 24 * 10);

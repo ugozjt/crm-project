@@ -60,6 +60,11 @@ public class ActivityRemarkController {
         return returnObject;
     }
 
+    /**
+     * 删除活动备注
+     * @param activityRemarkId
+     * @return
+     */
     @ResponseBody
     @RequestMapping("/workbench/activity/deleteActivityRemarkById.do")
     public Object deleteActivityRemark(String activityRemarkId) {

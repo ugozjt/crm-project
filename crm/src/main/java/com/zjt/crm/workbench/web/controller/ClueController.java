@@ -149,7 +149,7 @@ public class ClueController {
      * 获取当前clue未绑定的activity
      *
      * @param activityName 模糊搜索的市场活动名称
-     * @param clueId       要绑定的clueId
+     * @param clueId       要绑定的clueId，用于筛选已选择的activity
      * @return List<Activity>
      */
     @RequestMapping("/workbench/clue/selectActivityForBindByClueId.do")
@@ -159,6 +159,12 @@ public class ClueController {
         return activityService.selectActivitiesForBindByActName(activityName, clueId);
     }
 
+    /**
+     * 关联线索和市场活动
+     * @param clueId
+     * @param activityId
+     * @return
+     */
     @ResponseBody
     @RequestMapping("/workbench/clue/saveClueActivityRelationByClueAndActivityId.do")
     public Object saveClueActivityRelationByClueAndActivityId(String clueId, String[] activityId) {

@@ -1,8 +1,6 @@
 package com.zjt.crm.workbench.web.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zjt.crm.commons.constant.Constant;
 import com.zjt.crm.commons.pojo.ReturnObject;
@@ -19,23 +17,14 @@ import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.tomcat.util.buf.Utf8Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletContext;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.*;
@@ -174,7 +163,6 @@ public class ActivityController {
             returnObject.setMessage("系统繁忙,请稍后再试");
         }
 
-
         return returnObject;
     }
 
@@ -191,6 +179,12 @@ public class ActivityController {
         return activityService.queryActivityById(id);
     }
 
+    /**
+     * 将activity导出成excel文件
+     * @param response
+     * @param ids
+     * @throws IOException
+     */
     @RequestMapping("/workbench/activity/exportActivityByIds.do")
     public /*ResponseEntity<byte
     []>*/ void exportActivityByIds(HttpServletResponse response, String[] ids) throws IOException {
